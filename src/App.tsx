@@ -10,6 +10,7 @@ import {
   reencodeFrameWithRetry,
 } from './lib/degradation/engine';
 import { computeQuality, sanitizeSessionSettings, validateImageFile } from './lib/degradation/model';
+import { DegradationWorkerClient, createDegradationWorkerClient } from './lib/degradation/workerClient';
 import {
   DEFAULT_PLAYBACK_STATE,
   type PlaybackState,
@@ -21,6 +22,7 @@ import {
 const STORAGE_KEY = 'image-decay:session-settings';
 const MAX_ENCODE_RETRY = 3;
 const METRICS_INTERVAL = 5;
+const WORKER_FALLBACK_NOTICE = 'Worker処理で問題が発生したためメインスレッドへフォールバックしました。';
 
 const loadSettings = (): { settings: SessionSettings; errors: SessionSettingsErrorMap } => {
   try {
@@ -59,6 +61,9 @@ function App() {
   const settingsRef = useRef(settings);
   const playbackRef = useRef(playback);
   const uploadRef = useRef(upload);
+  const workerClientRef = useRef<DegradationWorkerClient | null>(null);
+  const workerModeRef = useRef<boolean>(false);
+  const workerFallbackNotifiedRef = useRef<boolean>(false);
 
   const loopTimerRef = useRef<number | null>(null);
   const processingRef = useRef<boolean>(false);
@@ -94,6 +99,17 @@ function App() {
         window.clearTimeout(loopTimerRef.current);
         loopTimerRef.current = null;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    workerClientRef.current = createDegradationWorkerClient();
+    return () => {
+      if (workerClientRef.current) {
+        workerClientRef.current.dispose();
+      }
+      workerClientRef.current = null;
+      workerModeRef.current = false;
     };
   }, []);
 
@@ -144,16 +160,67 @@ function App() {
     }
   };
 
-  const resetCurrentFrame = () => {
+  const disableWorkerMode = (message?: string) => {
+    workerModeRef.current = false;
+    if (message && !workerFallbackNotifiedRef.current) {
+      workerFallbackNotifiedRef.current = true;
+      setNotice(message);
+    }
+  };
+
+  const syncWorkerFromCanvas = async (canvas: HTMLCanvasElement): Promise<boolean> => {
+    const client = workerClientRef.current;
+    if (!client) {
+      disableWorkerMode();
+      return false;
+    }
+
+    try {
+      const source = await createImageBitmap(canvas);
+      const ready = await client.init(canvas.width, canvas.height, source, MAX_ENCODE_RETRY);
+      if (!ready) {
+        disableWorkerMode();
+        return false;
+      }
+
+      workerModeRef.current = true;
+      workerFallbackNotifiedRef.current = false;
+      return true;
+    } catch {
+      disableWorkerMode();
+      return false;
+    }
+  };
+
+  const drawWorkerFrameToCurrentCanvas = (frame: ImageBitmap) => {
+    const current = currentCanvasRef.current;
+    if (!current) {
+      frame.close();
+      return;
+    }
+
+    const context = current.getContext('2d');
+    if (!context) {
+      frame.close();
+      return;
+    }
+
+    context.clearRect(0, 0, current.width, current.height);
+    context.drawImage(frame, 0, 0, current.width, current.height);
+    frame.close();
+  };
+
+  const resetCurrentFrame = (): HTMLCanvasElement | null => {
     const original = originalCanvasRef.current;
     if (!original) {
-      return;
+      return null;
     }
 
     const freshCurrent = document.createElement('canvas');
     copyCanvasFrame(original, freshCurrent);
     currentCanvasRef.current = freshCurrent;
     setFrameVersion((prev) => prev + 1);
+    return freshCurrent;
   };
 
   const runTickRef = useRef<() => Promise<void>>(async () => {});
@@ -180,26 +247,43 @@ function App() {
     const baseGeneration = playbackRef.current.generation;
     const remaining = Math.max(0, config.maxGenerations - baseGeneration);
     const stepsToRun = Math.min(config.batch, remaining);
+    const plannedQualities: number[] = [];
+
+    for (let step = 0; step < stepsToRun; step += 1) {
+      plannedQualities.push(computeQuality(config, baseGeneration + step + 1));
+    }
 
     let processed = 0;
     let failed = false;
     let latestQuality = playbackRef.current.currentQuality;
+    let workerFrame: ImageBitmap | null = null;
 
-    for (let step = 0; step < stepsToRun; step += 1) {
-      if (token !== loopTokenRef.current || !playbackRef.current.isPlaying) {
-        break;
+    if (workerModeRef.current && workerClientRef.current && plannedQualities.length > 0) {
+      try {
+        const result = await workerClientRef.current.process(plannedQualities);
+        processed = result.processed;
+        failed = result.failed;
+        latestQuality = result.lastQuality ?? latestQuality;
+        workerFrame = result.frame;
+      } catch {
+        disableWorkerMode(WORKER_FALLBACK_NOTICE);
       }
+    }
 
-      const nextGeneration = baseGeneration + processed + 1;
-      latestQuality = computeQuality(config, nextGeneration);
+    if (!workerModeRef.current) {
+      for (const quality of plannedQualities) {
+        if (token !== loopTokenRef.current || !playbackRef.current.isPlaying) {
+          break;
+        }
 
-      const success = await reencodeFrameWithRetry(workingCanvas, latestQuality, MAX_ENCODE_RETRY);
-      if (!success) {
-        failed = true;
-        break;
+        latestQuality = quality;
+        const success = await reencodeFrameWithRetry(workingCanvas, latestQuality, MAX_ENCODE_RETRY);
+        if (!success) {
+          failed = true;
+          break;
+        }
+        processed += 1;
       }
-
-      processed += 1;
     }
 
     const tickEnd = performance.now();
@@ -211,9 +295,16 @@ function App() {
     const reachedMax = nextGeneration >= config.maxGenerations;
     const interrupted = token !== loopTokenRef.current;
     if (interrupted) {
+      if (workerFrame) {
+        workerFrame.close();
+      }
       processingRef.current = false;
       loopTimerRef.current = null;
       return;
+    }
+
+    if (workerFrame) {
+      drawWorkerFrameToCurrentCanvas(workerFrame);
     }
 
     const shouldStop = failed || reachedMax || processed === 0;
@@ -310,6 +401,7 @@ function App() {
 
     loopTokenRef.current += 1;
     stopLoop();
+    disableWorkerMode();
     setNotice('画像を読み込んでいます...');
 
     try {
@@ -338,11 +430,14 @@ function App() {
         ssim: null,
       });
 
+      const workerReady = await syncWorkerFromCanvas(current);
       setFrameVersion((prev) => prev + 1);
       setNotice(
         resized
-          ? `アップロード成功。高解像度のため ${width}x${height} に自動縮小しました。`
-          : 'アップロード成功。Playで劣化を開始できます。',
+          ? `アップロード成功。高解像度のため ${width}x${height} に自動縮小しました。${
+              workerReady ? ' Workerモードで処理します。' : ''
+            }`
+          : `アップロード成功。Playで劣化を開始できます。${workerReady ? ' Workerモードで処理します。' : ''}`,
       );
     } catch {
       setNotice('画像の読み込みに失敗しました。別の画像で再試行してください。');
@@ -370,7 +465,7 @@ function App() {
   const handleReset = () => {
     loopTokenRef.current += 1;
     stopLoop();
-    resetCurrentFrame();
+    const freshCurrent = resetCurrentFrame();
     setPlayback({
       ...DEFAULT_PLAYBACK_STATE,
       currentQuality: settingsRef.current.initialQuality,
@@ -378,6 +473,12 @@ function App() {
       ssim: null,
     });
     setNotice('セッションを初期化しました。');
+
+    if (freshCurrent) {
+      void syncWorkerFromCanvas(freshCurrent);
+    } else {
+      disableWorkerMode();
+    }
   };
 
   const disablePlay = !upload;
