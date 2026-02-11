@@ -3,13 +3,14 @@
   "short_name": "IMAGE Decay",
   "description": "JPEG再圧縮による画像劣化をブラウザ内で観察できるシミュレーター",
   "lang": "ja",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#eff4f1",
   "theme_color": "#eff4f1",
   "icons": [
     {
-      "src": "/favicon.ico",
+      "src": "./favicon.ico",
       "sizes": "16x16 24x24 32x32",
       "type": "image/x-icon",
       "purpose": "any"
