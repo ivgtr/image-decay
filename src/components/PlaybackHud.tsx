@@ -15,8 +15,8 @@ export function PlaybackHud({
   onReset,
   onSlower,
   onFaster,
-  onCompareStart,
-  onCompareEnd,
+  onCompareToggle,
+  showOriginal,
 }: PlaybackHudProps) {
   return (
     <section className="ui-floating-panel pointer-events-auto w-full overflow-hidden rounded-t-2xl bg-white/95 backdrop-blur-sm md:w-[min(84vw,390px)] md:rounded-2xl">
@@ -24,9 +24,9 @@ export function PlaybackHud({
       <PlaybackHudHeader
         fileName={fileName}
         hasEnded={hasEnded}
-        onCompareEnd={onCompareEnd}
-        onCompareStart={onCompareStart}
+        onCompareToggle={onCompareToggle}
         onReset={onReset}
+        showOriginal={showOriginal}
         speedLabel={`x${speed}`}
       />
       <PlaybackHudControls isPlaying={isPlaying} onFaster={onFaster} onPlayPause={onPlayPause} onSlower={onSlower} />

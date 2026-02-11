@@ -5,14 +5,14 @@ export interface PlaybackHudActionHandlers {
   onReset: () => void;
   onSlower: () => void;
   onFaster: () => void;
-  onCompareStart: () => void;
-  onCompareEnd: () => void;
+  onCompareToggle: () => void;
 }
 
 export interface PlaybackHudViewState {
   fileName: string;
   hasEnded: boolean;
   isPlaying: boolean;
+  showOriginal: boolean;
   progress?: number;
   speed: SpeedPreset;
 }

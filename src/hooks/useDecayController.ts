@@ -49,8 +49,7 @@ interface UseDecayControllerResult {
   handlePlayPause: () => void;
   handleBackToLanding: () => void;
   handleReset: () => void;
-  handleCompareStart: () => void;
-  handleCompareEnd: () => void;
+  handleCompareToggle: () => void;
   shiftSpeed: (direction: -1 | 1) => void;
 }
 
@@ -561,8 +560,7 @@ export const useDecayController = ({
     handlePlayPause,
     handleBackToLanding,
     handleReset: () => resetSession(true),
-    handleCompareStart: () => setShowOriginal(true),
-    handleCompareEnd: () => setShowOriginal(false),
+    handleCompareToggle: () => setShowOriginal((prev) => !prev),
     shiftSpeed,
   };
 };

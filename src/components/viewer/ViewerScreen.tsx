@@ -23,8 +23,7 @@ interface ViewerScreenProps {
   isPlaying: boolean;
   progress?: number;
   onBack: () => void;
-  onCompareStart: () => void;
-  onCompareEnd: () => void;
+  onCompareToggle: () => void;
   onFaster: () => void;
   onSlower: () => void;
   onPlayPause: () => void;
@@ -48,8 +47,7 @@ export function ViewerScreen({
   isPlaying,
   progress,
   onBack,
-  onCompareStart,
-  onCompareEnd,
+  onCompareToggle,
   onFaster,
   onSlower,
   onPlayPause,
@@ -165,8 +163,8 @@ export function ViewerScreen({
           fileName={fileName}
           hasEnded={hasEnded}
           isPlaying={isPlaying}
-          onCompareEnd={onCompareEnd}
-          onCompareStart={onCompareStart}
+          onCompareToggle={onCompareToggle}
+          showOriginal={showOriginal}
           onFaster={onFaster}
           onPlayPause={onPlayPause}
           onReset={onReset}

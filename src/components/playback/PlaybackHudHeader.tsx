@@ -4,8 +4,8 @@ interface PlaybackHudHeaderProps {
   fileName: string;
   hasEnded: boolean;
   speedLabel: string;
-  onCompareStart: () => void;
-  onCompareEnd: () => void;
+  showOriginal: boolean;
+  onCompareToggle: () => void;
   onReset: () => void;
 }
 
@@ -13,8 +13,8 @@ export function PlaybackHudHeader({
   fileName,
   hasEnded,
   speedLabel,
-  onCompareStart,
-  onCompareEnd,
+  showOriginal,
+  onCompareToggle,
   onReset,
 }: PlaybackHudHeaderProps) {
   return (
@@ -26,14 +26,10 @@ export function PlaybackHudHeader({
 
       <div className="flex items-center gap-2">
         <button
-          aria-label="show original while pressing"
-          className="ui-btn ui-btn-neutral h-10 w-10 !px-0"
-          onMouseDown={onCompareStart}
-          onMouseLeave={onCompareEnd}
-          onMouseUp={onCompareEnd}
-          onTouchCancel={onCompareEnd}
-          onTouchEnd={onCompareEnd}
-          onTouchStart={onCompareStart}
+          aria-label="toggle original image"
+          aria-pressed={showOriginal}
+          className={`ui-btn h-10 w-10 !px-0 ${showOriginal ? 'ui-btn-primary' : 'ui-btn-neutral'}`}
+          onClick={onCompareToggle}
           type="button"
         >
           <CompareIcon className="h-4 w-4" />

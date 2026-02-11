@@ -24,8 +24,7 @@ function App() {
     handlePlayPause,
     handleBackToLanding,
     handleReset,
-    handleCompareStart,
-    handleCompareEnd,
+    handleCompareToggle,
     shiftSpeed,
   } = useDecayController({
     settings,
@@ -57,8 +56,7 @@ function App() {
           isPlaying={playback.isPlaying}
           notice={notice}
           onBack={handleBackToLanding}
-          onCompareEnd={handleCompareEnd}
-          onCompareStart={handleCompareStart}
+          onCompareToggle={handleCompareToggle}
           onFaster={() => shiftSpeed(1)}
           onPlayPause={handlePlayPause}
           onReset={handleReset}
