@@ -3,7 +3,7 @@ const METRICS_MAX_EDGE = 256;
 const SSIM_C1 = (0.01 * 255) ** 2;
 const SSIM_C2 = (0.03 * 255) ** 2;
 
-export const MAX_IMAGE_EDGE = 4096;
+export const MAX_IMAGE_EDGE = 2048;
 
 const delay = (ms: number): Promise<void> => {
   return new Promise((resolve) => {

@@ -8,7 +8,6 @@ import {
   METRICS_INTERVAL,
   RESET_NOTICE,
   SAMPLE_IMAGE_FAILED_NOTICE,
-  SETTINGS_CORRECTED_NOTICE,
   SETTINGS_LOAD_CORRECTED_NOTICE,
   VIEWER_SPEED_PRESETS,
   WORKER_FALLBACK_NOTICE,
@@ -23,14 +22,15 @@ import {
   reencodeFrameWithRetry,
 } from '../lib/degradation/engine';
 import { computeQuality, validateImageFile } from '../lib/degradation/model';
+import { advanceWallClock, createWallClockState } from '../lib/playback/clock';
+import { createSchedulerState, planSchedulerTick, settleSchedulerAfterProcess } from '../lib/playback/scheduler';
 import { createDegradationWorkerClient, type DegradationWorkerClient } from '../lib/degradation/workerClient';
-import { DEFAULT_PLAYBACK_STATE, type PlaybackState, type SessionSettings, type UploadState } from '../types/domain';
+import type { PlaybackState, SessionSettings, SpeedPreset, UploadState } from '../types/domain';
 
 interface UseDecayControllerArgs {
   settings: SessionSettings;
   settingsRef: MutableRefObject<SessionSettings>;
   hasLoadError: boolean;
-  mergeSettings: (partial: Partial<SessionSettings>) => boolean;
 }
 
 interface UseDecayControllerResult {
@@ -53,15 +53,50 @@ interface UseDecayControllerResult {
   shiftSpeed: (direction: -1 | 1) => void;
 }
 
+const LOOP_INTERVAL_MS = 16;
+const INITIAL_VIEWER_SPEED: SpeedPreset = 1;
+const PREVIEW_FRAME_INTERVAL_MS = 33;
+const METRICS_MIN_INTERVAL_MS = 1200;
+
+const createInitialPlaybackState = (
+  settings: SessionSettings,
+  startedAtMs: number | null,
+  isPlaying: boolean,
+  processingWidth = 0,
+  processingHeight = 0,
+): PlaybackState => {
+  return {
+    isPlaying,
+    wallClock: createWallClockState(startedAtMs),
+    simulation: {
+      targetGenPerSec: INITIAL_VIEWER_SPEED,
+      effectiveGenPerSec: 0,
+      generationDebt: 0,
+      appliedGeneration: 0,
+      elapsedSimMs: 0,
+    },
+    processing: {
+      avgGenerationCostMs: settings.tickMs,
+      workerMode: false,
+      processingWidth,
+      processingHeight,
+    },
+    render: {
+      currentQuality: settings.initialQuality,
+      fps: 0,
+      psnr: null,
+      ssim: null,
+    },
+  };
+};
+
 export const useDecayController = ({
   settings,
   settingsRef,
   hasLoadError,
-  mergeSettings,
 }: UseDecayControllerArgs): UseDecayControllerResult => {
-  const [playback, setPlayback] = useState<PlaybackState>({
-    ...DEFAULT_PLAYBACK_STATE,
-    currentQuality: settings.initialQuality,
+  const [playback, setPlayback] = useState<PlaybackState>(() => {
+    return createInitialPlaybackState(settings, null, false);
   });
   const [upload, setUpload] = useState<UploadState | null>(null);
   const [frameVersion, setFrameVersion] = useState<number>(0);
@@ -89,6 +124,9 @@ export const useDecayController = ({
   const processingRef = useRef<boolean>(false);
   const playbackClockRef = useRef<number | null>(null);
   const loopTokenRef = useRef<number>(0);
+  const schedulerRef = useRef(createSchedulerState(settings.tickMs));
+  const lastPreviewPaintMsRef = useRef<number>(0);
+  const lastMetricsAtMsRef = useRef<number>(0);
 
   useEffect(() => {
     playbackRef.current = playback;
@@ -103,16 +141,22 @@ export const useDecayController = ({
   }, [hasEnded]);
 
   useEffect(() => {
-    if (playback.generation !== 0) {
+    if (playback.simulation.appliedGeneration !== 0) {
       return;
     }
     setPlayback((prev) => {
-      if (prev.currentQuality === settings.initialQuality) {
+      if (prev.render.currentQuality === settings.initialQuality) {
         return prev;
       }
-      return { ...prev, currentQuality: settings.initialQuality };
+      return {
+        ...prev,
+        render: {
+          ...prev.render,
+          currentQuality: settings.initialQuality,
+        },
+      };
     });
-  }, [playback.generation, settings.initialQuality]);
+  }, [playback.simulation.appliedGeneration, settings.initialQuality]);
 
   useEffect(() => {
     return () => {
@@ -132,6 +176,30 @@ export const useDecayController = ({
       workerModeRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (screenMode !== 'viewer') {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      const nowMs = Date.now();
+      setPlayback((prev) => {
+        const nextWallClock = advanceWallClock(prev.wallClock, nowMs);
+        if (nextWallClock === prev.wallClock) {
+          return prev;
+        }
+        return {
+          ...prev,
+          wallClock: nextWallClock,
+        };
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [screenMode]);
 
   const ensureCanvases = (fresh = false) => {
     if (fresh || !originalCanvasRef.current) {
@@ -182,6 +250,18 @@ export const useDecayController = ({
 
   const disableWorkerMode = (message?: string) => {
     workerModeRef.current = false;
+    setPlayback((prev) => {
+      if (!prev.processing.workerMode) {
+        return prev;
+      }
+      return {
+        ...prev,
+        processing: {
+          ...prev.processing,
+          workerMode: false,
+        },
+      };
+    });
     if (message && !workerFallbackNotifiedRef.current) {
       workerFallbackNotifiedRef.current = true;
       setNotice(message);
@@ -205,6 +285,18 @@ export const useDecayController = ({
 
       workerModeRef.current = true;
       workerFallbackNotifiedRef.current = false;
+      setPlayback((prev) => {
+        if (prev.processing.workerMode) {
+          return prev;
+        }
+        return {
+          ...prev,
+          processing: {
+            ...prev.processing,
+            workerMode: true,
+          },
+        };
+      });
       return true;
     } catch {
       disableWorkerMode();
@@ -246,15 +338,16 @@ export const useDecayController = ({
   const resetSession = (autoPlay: boolean) => {
     loopTokenRef.current += 1;
     stopLoop();
+    lastPreviewPaintMsRef.current = 0;
+    lastMetricsAtMsRef.current = 0;
+    schedulerRef.current = createSchedulerState(settingsRef.current.tickMs);
     const freshCurrent = resetCurrentFrame();
-
-    setPlayback({
-      ...DEFAULT_PLAYBACK_STATE,
-      currentQuality: settingsRef.current.initialQuality,
-      psnr: null,
-      ssim: null,
-      isPlaying: autoPlay,
-    });
+    const startedAtMs = Date.now();
+    const processingWidth = freshCurrent?.width ?? playbackRef.current.processing.processingWidth;
+    const processingHeight = freshCurrent?.height ?? playbackRef.current.processing.processingHeight;
+    setPlayback(
+      createInitialPlaybackState(settingsRef.current, startedAtMs, autoPlay, processingWidth, processingHeight),
+    );
     setHasEnded(false);
     setShowOriginal(false);
     setNotice(autoPlay ? '' : RESET_NOTICE);
@@ -286,8 +379,20 @@ export const useDecayController = ({
     processingRef.current = true;
     const tickStart = performance.now();
     const config = settingsRef.current;
-    const baseGeneration = playbackRef.current.generation;
-    const stepsToRun = config.batch;
+    const lastClock = playbackClockRef.current ?? tickStart;
+    const frameDeltaMs = Math.max(0, tickStart - lastClock);
+    playbackClockRef.current = tickStart;
+    const targetGenPerSec = playbackRef.current.simulation.targetGenPerSec;
+    const schedulePlan = planSchedulerTick({
+      scheduler: schedulerRef.current,
+      deltaMs: frameDeltaMs,
+      targetGenPerSec,
+      batch: config.batch,
+    });
+    schedulerRef.current = schedulePlan.scheduler;
+    const effectiveGenPerSec = schedulePlan.effectiveGenPerSec;
+    const stepsToRun = schedulePlan.stepsToRun;
+    const baseGeneration = playbackRef.current.simulation.appliedGeneration;
     const plannedQualities: number[] = [];
 
     for (let step = 0; step < stepsToRun; step += 1) {
@@ -296,7 +401,7 @@ export const useDecayController = ({
 
     let processed = 0;
     let failed = false;
-    let latestQuality = playbackRef.current.currentQuality;
+    let latestQuality = playbackRef.current.render.currentQuality;
     let workerFrame: ImageBitmap | null = null;
 
     if (workerModeRef.current && workerClientRef.current && plannedQualities.length > 0) {
@@ -328,9 +433,7 @@ export const useDecayController = ({
     }
 
     const tickEnd = performance.now();
-    const lastClock = playbackClockRef.current ?? tickStart;
     const elapsedDelta = Math.max(0, tickEnd - lastClock);
-    playbackClockRef.current = tickEnd;
 
     const nextGeneration = baseGeneration + processed;
     const interrupted = token !== loopTokenRef.current;
@@ -345,38 +448,67 @@ export const useDecayController = ({
       drawWorkerFrameToCurrentCanvas(workerFrame);
     }
 
-    const shouldStop = failed || processed === 0;
+    schedulerRef.current = settleSchedulerAfterProcess(schedulerRef.current, processed, tickEnd - tickStart);
 
-    let nextPsnr = playbackRef.current.psnr;
-    let nextSsim = playbackRef.current.ssim;
-    if (processed > 0 && (nextGeneration === 1 || nextGeneration % METRICS_INTERVAL === 0)) {
+    const shouldStop = failed || (stepsToRun > 0 && processed === 0);
+
+    let nextPsnr = playbackRef.current.render.psnr;
+    let nextSsim = playbackRef.current.render.ssim;
+    const shouldMeasureMetricsByGeneration = processed > 0 && (nextGeneration === 1 || nextGeneration % METRICS_INTERVAL === 0);
+    const shouldMeasureMetricsByTime = tickEnd - lastMetricsAtMsRef.current >= METRICS_MIN_INTERVAL_MS;
+    if (shouldMeasureMetricsByGeneration && shouldMeasureMetricsByTime) {
       const metrics = measureQualityMetrics();
       nextPsnr = metrics.psnr;
       nextSsim = metrics.ssim;
+      lastMetricsAtMsRef.current = tickEnd;
     }
 
-    const instantFps = elapsedDelta > 0 ? (processed * 1000) / elapsedDelta : playbackRef.current.fps;
+    const instantFps = elapsedDelta > 0 ? (processed * 1000) / elapsedDelta : playbackRef.current.render.fps;
     const smoothFps =
       processed > 0
-        ? playbackRef.current.fps === 0
+        ? playbackRef.current.render.fps === 0
           ? instantFps
-          : playbackRef.current.fps * 0.7 + instantFps * 0.3
-        : playbackRef.current.fps;
+          : playbackRef.current.render.fps * 0.7 + instantFps * 0.3
+        : playbackRef.current.render.fps;
 
-    if (processed > 0) {
+    const shouldUpdatePreview =
+      processed > 0 &&
+      (tickEnd - lastPreviewPaintMsRef.current >= PREVIEW_FRAME_INTERVAL_MS || shouldStop || failed);
+    if (shouldUpdatePreview) {
+      lastPreviewPaintMsRef.current = tickEnd;
       setFrameVersion((prev) => prev + 1);
     }
 
-    setPlayback((prev) => ({
-      ...prev,
-      generation: prev.generation + processed,
-      elapsedMs: prev.elapsedMs + processed * config.tickMs,
-      currentQuality: processed > 0 ? latestQuality : prev.currentQuality,
-      fps: Number.isFinite(smoothFps) ? smoothFps : prev.fps,
-      psnr: nextPsnr,
-      ssim: nextSsim,
-      isPlaying: prev.isPlaying && !shouldStop,
-    }));
+    const nowMs = Date.now();
+    const schedulerSnapshot = schedulerRef.current;
+    setPlayback((prev) => {
+      const nextAppliedGeneration = prev.simulation.appliedGeneration + processed;
+      const nextElapsedSimMs = nextAppliedGeneration * 1000;
+      return {
+        ...prev,
+        isPlaying: prev.isPlaying && !shouldStop,
+        wallClock: advanceWallClock(prev.wallClock, nowMs),
+        simulation: {
+          targetGenPerSec: prev.simulation.targetGenPerSec,
+          effectiveGenPerSec,
+          generationDebt: schedulerSnapshot.generationDebt,
+          appliedGeneration: nextAppliedGeneration,
+          elapsedSimMs: nextElapsedSimMs,
+        },
+        processing: {
+          ...prev.processing,
+          avgGenerationCostMs: schedulerSnapshot.avgGenerationCostMs,
+          workerMode: workerModeRef.current,
+        },
+        render: {
+          ...prev.render,
+          currentQuality: processed > 0 ? latestQuality : prev.render.currentQuality,
+          fps: Number.isFinite(smoothFps) ? smoothFps : prev.render.fps,
+          psnr: nextPsnr,
+          ssim: nextSsim,
+        },
+      };
+    });
 
     if (failed) {
       setHasEnded(true);
@@ -390,9 +522,7 @@ export const useDecayController = ({
       return;
     }
 
-    const effectiveTickMs = Math.max(8, config.tickMs / config.speed);
-    const processCost = tickEnd - tickStart;
-    const delayMs = Math.max(0, effectiveTickMs - processCost);
+    const delayMs = schedulerRef.current.generationDebt >= 1 ? 0 : LOOP_INTERVAL_MS;
     loopTimerRef.current = window.setTimeout(() => {
       void runTickRef.current();
     }, delayMs);
@@ -425,6 +555,9 @@ export const useDecayController = ({
 
     loopTokenRef.current += 1;
     stopLoop();
+    lastPreviewPaintMsRef.current = 0;
+    lastMetricsAtMsRef.current = 0;
+    schedulerRef.current = createSchedulerState(settingsRef.current.tickMs);
     disableWorkerMode();
     setIsLoading(true);
     setHasEnded(false);
@@ -444,20 +577,19 @@ export const useDecayController = ({
 
       setUpload({
         fileName: file.name,
-        width,
-        height,
+        originalWidth: decoded.width,
+        originalHeight: decoded.height,
+        processingWidth: width,
+        processingHeight: height,
         resized,
       });
 
-      setPlayback({
-        ...DEFAULT_PLAYBACK_STATE,
-        currentQuality: settingsRef.current.initialQuality,
-        psnr: null,
-        ssim: null,
-        isPlaying: true,
-      });
+      const startedAtMs = Date.now();
+      setPlayback(createInitialPlaybackState(settingsRef.current, startedAtMs, true, width, height));
 
       setScreenMode('viewer');
+      lastPreviewPaintMsRef.current = performance.now();
+      lastMetricsAtMsRef.current = 0;
       setFrameVersion((prev) => prev + 1);
 
       const workerReady = await syncWorkerFromCanvas(current);
@@ -498,7 +630,21 @@ export const useDecayController = ({
     if (playbackRef.current.isPlaying) {
       loopTokenRef.current += 1;
       stopLoop();
-      setPlayback((prev) => ({ ...prev, isPlaying: false }));
+      schedulerRef.current = {
+        ...schedulerRef.current,
+        generationDebt: 0,
+      };
+      setPlayback((prev) => {
+        return {
+          ...prev,
+          isPlaying: false,
+          simulation: {
+            ...prev.simulation,
+            effectiveGenPerSec: 0,
+            generationDebt: 0,
+          },
+        };
+      });
       return;
     }
 
@@ -507,20 +653,31 @@ export const useDecayController = ({
       return;
     }
 
+    schedulerRef.current = {
+      ...schedulerRef.current,
+      generationDebt: 0,
+    };
     playbackClockRef.current = performance.now();
-    setPlayback((prev) => ({ ...prev, isPlaying: true }));
+    setPlayback((prev) => {
+      return {
+        ...prev,
+        isPlaying: true,
+        simulation: {
+          ...prev.simulation,
+          generationDebt: 0,
+        },
+      };
+    });
   };
 
   const handleBackToLanding = () => {
     loopTokenRef.current += 1;
     stopLoop();
+    lastPreviewPaintMsRef.current = 0;
+    lastMetricsAtMsRef.current = 0;
+    schedulerRef.current = createSchedulerState(settingsRef.current.tickMs);
     disableWorkerMode();
-    setPlayback({
-      ...DEFAULT_PLAYBACK_STATE,
-      currentQuality: settingsRef.current.initialQuality,
-      psnr: null,
-      ssim: null,
-    });
+    setPlayback(createInitialPlaybackState(settingsRef.current, null, false));
     setUpload(null);
     setShowOriginal(false);
     setHasEnded(false);
@@ -529,19 +686,25 @@ export const useDecayController = ({
   };
 
   const shiftSpeed = (direction: -1 | 1) => {
-    const currentIndex = VIEWER_SPEED_PRESETS.findIndex((value) => value === settingsRef.current.speed);
+    const currentSpeed = playbackRef.current.simulation.targetGenPerSec as SpeedPreset;
+    const currentIndex = VIEWER_SPEED_PRESETS.findIndex((value) => value === currentSpeed);
     const safeIndex = currentIndex >= 0 ? currentIndex : VIEWER_SPEED_PRESETS.indexOf(1);
     const nextIndex = Math.min(Math.max(0, safeIndex + direction), VIEWER_SPEED_PRESETS.length - 1);
     const nextSpeed = VIEWER_SPEED_PRESETS[nextIndex];
 
-    if (nextSpeed === settingsRef.current.speed) {
+    if (nextSpeed === currentSpeed) {
       return;
     }
 
-    const hadError = mergeSettings({ speed: nextSpeed });
-    if (hadError) {
-      setNotice(SETTINGS_CORRECTED_NOTICE);
-    }
+    setPlayback((prev) => {
+      return {
+        ...prev,
+        simulation: {
+          ...prev.simulation,
+          targetGenPerSec: nextSpeed,
+        },
+      };
+    });
   };
 
   return {

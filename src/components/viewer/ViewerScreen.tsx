@@ -8,7 +8,9 @@ import { ArrowLeftIcon } from '../icons/AppIcons';
 
 interface ViewerScreenProps {
   playback: PlaybackState;
-  elapsedLabel: string;
+  imageTimeLabel: string;
+  startedAtLabel: string;
+  processingLabel: string;
   generation: number;
   speedLabel: string;
   speed: SpeedPreset;
@@ -32,7 +34,9 @@ interface ViewerScreenProps {
 
 export function ViewerScreen({
   playback,
-  elapsedLabel,
+  imageTimeLabel,
+  startedAtLabel,
+  processingLabel,
   generation,
   speedLabel,
   speed,
@@ -87,8 +91,8 @@ export function ViewerScreen({
 
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
             <div className="rounded-md border border-slate-200 bg-white/70 px-3 py-1 text-center">
-              <p className="text-[10px] uppercase tracking-[0.08em] text-slate-500">Elapsed</p>
-              <p className="text-xs font-semibold tabular-nums text-slate-900 md:text-sm">{elapsedLabel}</p>
+              <p className="text-[10px] uppercase tracking-[0.08em] text-slate-500">Image Time</p>
+              <p className="text-xs font-semibold tabular-nums text-slate-900 md:text-sm">{imageTimeLabel}</p>
             </div>
             <div className="rounded-md border border-slate-200 bg-white/70 px-3 py-1 text-center">
               <p className="text-[10px] uppercase tracking-[0.08em] text-slate-500">Speed</p>
@@ -119,15 +123,18 @@ export function ViewerScreen({
 
       {isInfoOpen ? (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/35 p-4"
-          onClick={() => setIsInfoOpen(false)}
+          className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-950/35 p-4 sm:items-center"
+          onMouseDown={() => setIsInfoOpen(false)}
           role="presentation"
         >
-          <section className="ui-floating-panel w-full max-w-5xl rounded-2xl bg-white/95 p-4 md:p-5" onClick={(event) => event.stopPropagation()}>
+          <section
+            className="ui-floating-panel w-full max-w-5xl rounded-2xl bg-white/95 p-4 md:p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <header className="mb-4 flex items-center justify-between gap-2">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Playback</p>
-                <p className="text-sm font-semibold text-slate-900">{fileName}</p>
+                <p className="text-sm font-semibold leading-snug text-slate-900 break-all">{fileName}</p>
               </div>
               <button
                 className="ui-btn ui-btn-secondary ui-btn-caps ui-btn-compact"
@@ -138,18 +145,26 @@ export function ViewerScreen({
               </button>
             </header>
 
-            <div className="mb-4 grid gap-2 sm:grid-cols-3">
-              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Elapsed</p>
-                <p className="mt-1 text-sm font-semibold tabular-nums text-slate-900">{elapsedLabel}</p>
-              </div>
+            <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Generation</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums text-slate-900">{generation}</p>
               </div>
               <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Image Time</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-slate-900">{imageTimeLabel}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Speed</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums text-slate-900">{speedLabel}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Processing</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-slate-900">{processingLabel}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Started</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-slate-900">{startedAtLabel}</p>
               </div>
             </div>
 

@@ -1,4 +1,5 @@
 interface PlaybackProgressBarProps {
+  isPlaying: boolean;
   progress?: number;
 }
 
@@ -6,8 +7,12 @@ const clampPercentage = (progress: number): number => {
   return Math.min(100, Math.max(0, progress * 100));
 };
 
-export function PlaybackProgressBar({ progress }: PlaybackProgressBarProps) {
+export function PlaybackProgressBar({ isPlaying, progress }: PlaybackProgressBarProps) {
   if (typeof progress !== 'number' || !Number.isFinite(progress)) {
+    if (!isPlaying) {
+      return <div className="h-1 w-full bg-slate-200" />;
+    }
+
     return (
       <div className="h-1 w-full overflow-hidden bg-slate-200">
         <div className="ui-progress-indeterminate h-full w-2/5 bg-blue-600" />

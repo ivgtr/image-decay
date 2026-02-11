@@ -3,11 +3,11 @@ import { ViewerScreen } from './components/viewer/ViewerScreen';
 import { useDecayController } from './hooks/useDecayController';
 import { useSessionSettings } from './hooks/useSessionSettings';
 import { shouldShowWarningNotice } from './lib/app/constants';
-import { formatElapsed } from './lib/app/formatters';
+import { formatDateTime } from './lib/app/formatters';
 import { sampleOptions } from './lib/app/sampleLibrary';
 
 function App() {
-  const { settings, settingsRef, hasLoadError, mergeSettings } = useSessionSettings();
+  const { settings, settingsRef, hasLoadError } = useSessionSettings();
   const {
     playback,
     upload,
@@ -30,10 +30,19 @@ function App() {
     settings,
     settingsRef,
     hasLoadError,
-    mergeSettings,
   });
 
   const shouldShowNotice = shouldShowWarningNotice(notice);
+  const sessionStartedAtMs = playback.wallClock.sessionStartedAtMs;
+  const simulatedNowMs = sessionStartedAtMs === null ? null : sessionStartedAtMs + playback.simulation.elapsedSimMs;
+  const startedAtLabel = formatDateTime(sessionStartedAtMs);
+  const imageTimeLabel = formatDateTime(simulatedNowMs);
+  const processingLabel =
+    playback.processing.processingWidth > 0 && playback.processing.processingHeight > 0
+      ? `${playback.processing.processingWidth}x${playback.processing.processingHeight}`
+      : '--';
+
+  const viewerSpeed = playback.simulation.targetGenPerSec;
 
   return (
     <main className="app-shell">
@@ -48,10 +57,10 @@ function App() {
       ) : (
         <ViewerScreen
           currentCanvas={currentCanvas}
-          elapsedLabel={formatElapsed(playback.elapsedMs)}
+          imageTimeLabel={imageTimeLabel}
           fileName={upload?.fileName ?? 'Untitled'}
           frameVersion={frameVersion}
-          generation={playback.generation}
+          generation={playback.simulation.appliedGeneration}
           hasEnded={hasEnded}
           isPlaying={playback.isPlaying}
           notice={notice}
@@ -63,10 +72,12 @@ function App() {
           onSlower={() => shiftSpeed(-1)}
           originalCanvas={originalCanvas}
           playback={playback}
+          processingLabel={processingLabel}
+          startedAtLabel={startedAtLabel}
           shouldShowNotice={shouldShowNotice}
           showOriginal={showOriginal}
-          speed={settings.speed}
-          speedLabel={`x${settings.speed}`}
+          speed={viewerSpeed}
+          speedLabel={`x${viewerSpeed}`}
         />
       )}
     </main>

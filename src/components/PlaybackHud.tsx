@@ -20,7 +20,7 @@ export function PlaybackHud({
 }: PlaybackHudProps) {
   return (
     <section className="ui-floating-panel pointer-events-auto w-full overflow-hidden rounded-t-2xl bg-white/95 backdrop-blur-sm md:w-[min(84vw,390px)] md:rounded-2xl">
-      <PlaybackProgressBar progress={progress} />
+      <PlaybackProgressBar isPlaying={isPlaying} progress={progress} />
       <PlaybackHudHeader
         fileName={fileName}
         hasEnded={hasEnded}

@@ -17,12 +17,13 @@ export const drawCanvasPreview = (
   const width = Math.max(1, Math.round(sourceWidth * safeScale));
   const height = Math.max(1, Math.round(sourceHeight * safeScale));
 
-  canvas.width = width;
-  canvas.height = height;
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'low';
+  }
 
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = '#f8fafc';
-  context.fillRect(0, 0, width, height);
   context.drawImage(source, 0, 0, width, height);
 
   return { width, height };
