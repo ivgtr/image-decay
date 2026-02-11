@@ -1,0 +1,4 @@
+interface:
+  display_name: "Craft Distinct UI"
+  short_description: "Design modern UI with clear, non-generic art direction"
+  default_prompt: "Use $craft-distinct-ui to produce a distinctive, production-ready frontend design that avoids generic AI aesthetics."
