@@ -11,7 +11,7 @@ const iconButtonClass = 'ui-btn ui-btn-secondary h-10 w-10 !px-0 text-sm';
 
 export function PlaybackHudControls({ isPlaying, onSlower, onPlayPause, onFaster }: PlaybackHudControlsProps) {
   return (
-    <div className="flex items-center justify-center gap-4 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 md:pb-4">
+    <div className="flex items-center justify-center gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-3 md:pb-3">
       <button aria-label="slower" className={iconButtonClass} onClick={onSlower} type="button">
         <MinusIcon className="h-5 w-5" />
       </button>

@@ -19,7 +19,7 @@ export function PlaybackHud({
   onCompareEnd,
 }: PlaybackHudProps) {
   return (
-    <section className="ui-floating-panel pointer-events-auto w-full overflow-hidden rounded-t-2xl border border-slate-300 bg-white/95 md:w-[min(88vw,430px)] md:rounded-2xl">
+    <section className="ui-floating-panel pointer-events-auto w-full overflow-hidden rounded-t-2xl bg-white/95 backdrop-blur-sm md:w-[min(84vw,390px)] md:rounded-2xl">
       <PlaybackProgressBar progress={progress} />
       <PlaybackHudHeader
         fileName={fileName}
