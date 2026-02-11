@@ -12,7 +12,8 @@ interface LandingScreenProps {
 
 export function LandingScreen({ isLoading, notice, onFileSelect, onSampleSelect, samples }: LandingScreenProps) {
   return (
-    <section className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-8 md:px-8 md:py-12">
+    <section className="landing-stage mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-8 md:px-8 md:py-12">
+      <div aria-hidden className="landing-stage-glow" />
       <div className="grid w-full gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <LandingHero />
         <LandingUploadPanel

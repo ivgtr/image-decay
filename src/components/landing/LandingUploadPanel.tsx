@@ -18,17 +18,17 @@ export function LandingUploadPanel({
   samples,
 }: LandingUploadPanelProps) {
   return (
-    <aside className="panel-surface p-4 md:p-6">
+    <aside className="panel-surface landing-upload-panel p-4 md:p-6">
       <label
-        className="ui-upload-drop group flex min-h-[208px] cursor-pointer flex-col items-center justify-center rounded-2xl px-4 py-6 text-center"
+        className="ui-upload-drop landing-upload-drop group flex min-h-[208px] cursor-pointer flex-col items-center justify-center rounded-2xl px-4 py-6 text-center"
         htmlFor="image-input"
       >
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition group-hover:border-blue-500 group-hover:text-blue-700">
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition group-hover:border-cyan-500 group-hover:text-cyan-700">
           <UploadIcon className="h-6 w-6" />
         </span>
-        <span className="mt-4 text-lg font-semibold text-slate-900">Upload Image</span>
+        <span className="mt-4 text-lg font-semibold text-slate-900">DROP OR SELECT IMAGE</span>
         <span className="mt-2 text-xs text-slate-600">JPEG / PNG / WebP / GIF</span>
-        <span className="mt-2 text-xs text-slate-500">max 10MB</span>
+        <span className="mt-2 text-xs text-slate-500">MAX 10MB</span>
       </label>
 
       <SampleList isLoading={isLoading} onSampleSelect={onSampleSelect} samples={samples} />
@@ -46,7 +46,7 @@ export function LandingUploadPanel({
         type="file"
       />
 
-      <p className="mt-4 min-h-6 text-xs text-amber-700">{isLoading ? 'loading...' : notice}</p>
+      <p className="mt-4 min-h-6 text-xs text-slate-600">{isLoading ? 'processing...' : notice}</p>
     </aside>
   );
 }
