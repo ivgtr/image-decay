@@ -4,7 +4,7 @@
   "private": true,
   "description": "JPEG再圧縮による画質劣化を時間経過で観察するWebアプリケーション",
   "author": "ivgtr",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ivgtr/image-decay.git"

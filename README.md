@@ -1,40 +1,18 @@
 # image-decay
 
-JPEG再圧縮による画質劣化を、時間経過で観察するWebアプリケーションです。  
-MVPの中核（再エンコードループ、比較表示、主要メトリクス表示、設定バリデーション）まで実装済みです。
+ブラウザ内で画像を繰り返し JPEG 再圧縮し、時間経過による劣化を観察する Web アプリです。
 
-## 技術スタック
+## Demo
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
+- [GitHub Pages](https://ivgtr.github.io/image-decay/)
 
-## セットアップ
+## Notes
 
-```bash
-npm install
-npm run dev
-```
+- 画像処理はブラウザ内で完結し、外部アップロードは行いません。
+- クロスブラウザでの長時間耐久検証は継続中です。
 
-## 開発コマンド
+## License
 
-```bash
-npm run typecheck
-npm run lint
-npm run lint:fix
-npm run format
-npm run format:check
-```
+MIT © [ivgtr](https://github.com/ivgtr)
 
-## 現在の状態
-
-- JPEG再エンコード劣化ループ: 実装済み（`toBlob('image/jpeg', q)` + リトライ）
-- 比較表示: Canvasスプリットビュー + 境界スライダーを実装済み
-- メトリクス: generation / quality / elapsed / FPS / PSNR / SSIMを更新
-- 設定: UI入力バリデーション + localStorage復元時のスキーマ検証を実装
-- パフォーマンス: Blob URL解放・高解像度自動縮小（長辺4096）を実装
-- Worker + OffscreenCanvas: PoC実装済み（対応環境ではWorker処理、失敗時はメインスレッドへ自動フォールバック）
-  - Workerメッセージは直列化し、`process` と `init` の競合を防止
-  - `transferToImageBitmap` 後のフレーム復元で黒画面化を回避
-- 未対応: クロスブラウザ実機検証、長時間耐久の体系テスト、最小自動テスト導入
+[![Twitter Follow](https://img.shields.io/twitter/follow/ivgtr?style=social)](https://twitter.com/ivgtr) [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
