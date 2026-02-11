@@ -259,3 +259,17 @@ body {
   background: var(--color-surface-muted);
   padding: 10px 12px;
 }
+
+.ui-progress-indeterminate {
+  animation: progress-indeterminate 1.2s linear infinite;
+}
+
+@keyframes progress-indeterminate {
+  from {
+    transform: translateX(-110%);
+  }
+
+  to {
+    transform: translateX(280%);
+  }
+}

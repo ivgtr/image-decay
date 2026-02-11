@@ -23,7 +23,6 @@ export const SETTINGS_LIMITS = {
   exponentialDecay: { min: 0.9, max: 1, step: 0.001, label: 'Exponential Decay' },
   tickMs: { min: 10, max: 2000, step: 10, label: 'Tick (ms)' },
   batch: { min: 1, max: 100, step: 1, label: 'Batch' },
-  maxGenerations: { min: 1, max: 100000, step: 100, label: 'Max Generations' },
 } as const;
 
 type NumericSettingKey = keyof typeof SETTINGS_LIMITS;
@@ -93,9 +92,6 @@ export const sanitizeSessionSettings = (
     ),
     tickMs: sanitizeNumeric('tickMs', merged.tickMs, DEFAULT_SESSION_SETTINGS.tickMs, errors),
     batch: Math.round(sanitizeNumeric('batch', merged.batch, DEFAULT_SESSION_SETTINGS.batch, errors)),
-    maxGenerations: Math.round(
-      sanitizeNumeric('maxGenerations', merged.maxGenerations, DEFAULT_SESSION_SETTINGS.maxGenerations, errors),
-    ),
     speed: sanitizeSpeed(merged.speed, DEFAULT_SESSION_SETTINGS.speed, errors),
     qualityModel: sanitizeQualityModel(merged.qualityModel, DEFAULT_SESSION_SETTINGS.qualityModel, errors),
   };

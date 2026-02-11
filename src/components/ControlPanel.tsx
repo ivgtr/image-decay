@@ -42,7 +42,6 @@ const numericFieldConfigs: NumericFieldConfig[] = [
   { key: 'exponentialDecay' },
   { key: 'tickMs' },
   { key: 'batch' },
-  { key: 'maxGenerations', className: 'col-span-2' },
 ];
 
 const qualityModelOptions: SessionSettings['qualityModel'][] = ['fixed', 'linear', 'exponential'];

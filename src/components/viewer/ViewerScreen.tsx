@@ -9,7 +9,6 @@ interface ViewerScreenProps {
   playback: PlaybackState;
   elapsedLabel: string;
   generation: number;
-  maxGenerations: number;
   speedLabel: string;
   speed: SpeedPreset;
   shouldShowNotice: boolean;
@@ -21,7 +20,7 @@ interface ViewerScreenProps {
   fileName: string;
   hasEnded: boolean;
   isPlaying: boolean;
-  progress: number;
+  progress?: number;
   onBack: () => void;
   onCompareStart: () => void;
   onCompareEnd: () => void;
@@ -35,7 +34,6 @@ export function ViewerScreen({
   playback,
   elapsedLabel,
   generation,
-  maxGenerations,
   speedLabel,
   speed,
   shouldShowNotice,
@@ -62,7 +60,6 @@ export function ViewerScreen({
         <ViewerHeader
           elapsedLabel={elapsedLabel}
           generation={generation}
-          maxGenerations={maxGenerations}
           onBack={onBack}
           speedLabel={speedLabel}
         />

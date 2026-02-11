@@ -13,6 +13,6 @@ export interface PlaybackHudViewState {
   fileName: string;
   hasEnded: boolean;
   isPlaying: boolean;
-  progress: number;
+  progress?: number;
   speed: SpeedPreset;
 }

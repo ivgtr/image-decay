@@ -288,8 +288,7 @@ export const useDecayController = ({
     const tickStart = performance.now();
     const config = settingsRef.current;
     const baseGeneration = playbackRef.current.generation;
-    const remaining = Math.max(0, config.maxGenerations - baseGeneration);
-    const stepsToRun = Math.min(config.batch, remaining);
+    const stepsToRun = config.batch;
     const plannedQualities: number[] = [];
 
     for (let step = 0; step < stepsToRun; step += 1) {
@@ -335,7 +334,6 @@ export const useDecayController = ({
     playbackClockRef.current = tickEnd;
 
     const nextGeneration = baseGeneration + processed;
-    const reachedMax = nextGeneration >= config.maxGenerations;
     const interrupted = token !== loopTokenRef.current;
     if (interrupted) {
       workerFrame?.close();
@@ -348,7 +346,7 @@ export const useDecayController = ({
       drawWorkerFrameToCurrentCanvas(workerFrame);
     }
 
-    const shouldStop = failed || reachedMax || processed === 0;
+    const shouldStop = failed || processed === 0;
 
     let nextPsnr = playbackRef.current.psnr;
     let nextSsim = playbackRef.current.ssim;
@@ -384,9 +382,6 @@ export const useDecayController = ({
     if (failed) {
       setHasEnded(true);
       setNotice(ENCODE_FAILED_NOTICE);
-    } else if (reachedMax) {
-      setHasEnded(true);
-      setNotice(`最大世代 (${config.maxGenerations}) に到達しました。REPLAYで再生できます。`);
     }
 
     processingRef.current = false;
@@ -508,7 +503,7 @@ export const useDecayController = ({
       return;
     }
 
-    if (hasEndedRef.current || playbackRef.current.generation >= settingsRef.current.maxGenerations) {
+    if (hasEndedRef.current) {
       resetSession(true);
       return;
     }

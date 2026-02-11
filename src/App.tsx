@@ -55,7 +55,6 @@ function App() {
           generation={playback.generation}
           hasEnded={hasEnded}
           isPlaying={playback.isPlaying}
-          maxGenerations={settings.maxGenerations}
           notice={notice}
           onBack={handleBackToLanding}
           onCompareEnd={handleCompareEnd}
@@ -66,7 +65,6 @@ function App() {
           onSlower={() => shiftSpeed(-1)}
           originalCanvas={originalCanvas}
           playback={playback}
-          progress={Math.min(1, playback.generation / settings.maxGenerations)}
           shouldShowNotice={shouldShowNotice}
           showOriginal={showOriginal}
           speed={settings.speed}

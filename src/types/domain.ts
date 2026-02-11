@@ -9,7 +9,6 @@ export interface SessionSettings {
   exponentialDecay: number;
   tickMs: number;
   batch: number;
-  maxGenerations: number;
   speed: SpeedPreset;
   qualityModel: QualityModel;
 }
@@ -42,7 +41,6 @@ export const DEFAULT_SESSION_SETTINGS: SessionSettings = {
   exponentialDecay: 0.995,
   tickMs: 120,
   batch: 1,
-  maxGenerations: 2000,
   speed: 1,
   qualityModel: 'exponential',
 };

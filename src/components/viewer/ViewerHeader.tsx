@@ -4,7 +4,6 @@ import { ArrowLeftIcon, ClockIcon, LayersIcon, SpeedIcon } from '../icons/AppIco
 interface ViewerHeaderProps {
   elapsedLabel: string;
   generation: number;
-  maxGenerations: number;
   speedLabel: string;
   onBack: () => void;
 }
@@ -28,7 +27,7 @@ const StatChip = ({ label, value, icon, className }: StatChipProps) => {
   );
 };
 
-export function ViewerHeader({ elapsedLabel, generation, maxGenerations, speedLabel, onBack }: ViewerHeaderProps) {
+export function ViewerHeader({ elapsedLabel, generation, speedLabel, onBack }: ViewerHeaderProps) {
   return (
     <header className="panel-surface flex items-center justify-between gap-4 px-4 py-4 md:px-6">
       <button className="ui-btn ui-btn-secondary ui-btn-caps gap-2" onClick={onBack} type="button">
@@ -45,7 +44,7 @@ export function ViewerHeader({ elapsedLabel, generation, maxGenerations, speedLa
           <p className="text-xl font-semibold tabular-nums tracking-tight text-slate-900 md:text-2xl">{elapsedLabel}</p>
           <p className="mt-2 inline-flex items-center gap-1 text-xs text-slate-500">
             <LayersIcon className="h-4 w-4" />
-            G {generation} / {maxGenerations}
+            G {generation}
           </p>
         </div>
 
