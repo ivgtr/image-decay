@@ -1,4 +1,4 @@
-import { CompareIcon, ResetIcon } from '../icons/AppIcons';
+import { CompareIcon, DownloadIcon, ResetIcon } from '../icons/AppIcons';
 
 interface PlaybackHudHeaderProps {
   fileName: string;
@@ -6,6 +6,7 @@ interface PlaybackHudHeaderProps {
   speedLabel: string;
   showOriginal: boolean;
   onCompareToggle: () => void;
+  onDownload: () => Promise<void>;
   onReset: () => void;
 }
 
@@ -15,6 +16,7 @@ export function PlaybackHudHeader({
   speedLabel,
   showOriginal,
   onCompareToggle,
+  onDownload,
   onReset,
 }: PlaybackHudHeaderProps) {
   return (
@@ -33,6 +35,16 @@ export function PlaybackHudHeader({
           type="button"
         >
           <CompareIcon className="h-4 w-4" />
+        </button>
+        <button
+          aria-label="download degraded image"
+          className="ui-btn ui-btn-neutral h-10 w-10 !px-0"
+          onClick={() => {
+            void onDownload();
+          }}
+          type="button"
+        >
+          <DownloadIcon className="h-4 w-4" />
         </button>
         <button
           aria-label="reset playback"

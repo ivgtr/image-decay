@@ -2,6 +2,25 @@
   "name": "image-decay",
   "version": "0.1.0",
   "private": true,
+  "description": "JPEG再圧縮による画質劣化を時間経過で観察するWebアプリケーション",
+  "author": "ivgtr",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ivgtr/image-decay.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ivgtr/image-decay/issues"
+  },
+  "homepage": "https://github.com/ivgtr/image-decay",
+  "keywords": [
+    "image-decay",
+    "jpeg",
+    "canvas",
+    "react",
+    "typescript",
+    "vite"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -6,6 +6,7 @@ export interface PlaybackHudActionHandlers {
   onSlower: () => void;
   onFaster: () => void;
   onCompareToggle: () => void;
+  onDownload: () => Promise<void>;
 }
 
 export interface PlaybackHudViewState {

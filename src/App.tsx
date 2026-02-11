@@ -25,6 +25,7 @@ function App() {
     handleBackToLanding,
     handleReset,
     handleCompareToggle,
+    handleDownload,
     shiftSpeed,
   } = useDecayController({
     settings,
@@ -66,6 +67,7 @@ function App() {
           notice={notice}
           onBack={handleBackToLanding}
           onCompareToggle={handleCompareToggle}
+          onDownload={handleDownload}
           onFaster={() => shiftSpeed(1)}
           onPlayPause={handlePlayPause}
           onReset={handleReset}

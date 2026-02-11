@@ -26,6 +26,7 @@ interface ViewerScreenProps {
   progress?: number;
   onBack: () => void;
   onCompareToggle: () => void;
+  onDownload: () => Promise<void>;
   onFaster: () => void;
   onSlower: () => void;
   onPlayPause: () => void;
@@ -52,6 +53,7 @@ export function ViewerScreen({
   progress,
   onBack,
   onCompareToggle,
+  onDownload,
   onFaster,
   onSlower,
   onPlayPause,
@@ -179,6 +181,7 @@ export function ViewerScreen({
           hasEnded={hasEnded}
           isPlaying={isPlaying}
           onCompareToggle={onCompareToggle}
+          onDownload={onDownload}
           showOriginal={showOriginal}
           onFaster={onFaster}
           onPlayPause={onPlayPause}

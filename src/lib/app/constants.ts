@@ -10,6 +10,7 @@ export const SETTINGS_CORRECTED_NOTICE = '設定値に不正な値があった�
 export const SETTINGS_LOAD_CORRECTED_NOTICE = '保存済み設定に不正値があったため補正しました。';
 export const LOAD_IMAGE_NOTICE = '画像を読み込んでいます...';
 export const LOAD_IMAGE_FAILED_NOTICE = '画像の読み込みに失敗しました。別の画像で再試行してください。';
+export const DOWNLOAD_IMAGE_FAILED_NOTICE = '画像の保存に失敗しました。再試行してください。';
 export const SAMPLE_IMAGE_FAILED_NOTICE = 'サンプル画像の生成に失敗しました。';
 export const ENCODE_FAILED_NOTICE = 'JPEG再エンコードに3回失敗したため停止しました。';
 export const RESET_NOTICE = '最初のフレームに戻しました。';

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   DEFAULT_NOTICE,
+  DOWNLOAD_IMAGE_FAILED_NOTICE,
   ENCODE_FAILED_NOTICE,
   LOAD_IMAGE_FAILED_NOTICE,
   LOAD_IMAGE_NOTICE,
@@ -50,6 +51,7 @@ interface UseDecayControllerResult {
   handleBackToLanding: () => void;
   handleReset: () => void;
   handleCompareToggle: () => void;
+  handleDownload: () => Promise<void>;
   shiftSpeed: (direction: -1 | 1) => void;
 }
 
@@ -57,6 +59,13 @@ const LOOP_INTERVAL_MS = 16;
 const INITIAL_VIEWER_SPEED: SpeedPreset = 1;
 const PREVIEW_FRAME_INTERVAL_MS = 33;
 const METRICS_MIN_INTERVAL_MS = 1200;
+const DOWNLOAD_MIME_TYPE = 'image/png';
+
+const createDownloadFileName = (originalFileName: string, generation: number): string => {
+  const baseName = originalFileName.replace(/\.[^/.]+$/, '').trim();
+  const safeBaseName = baseName.length > 0 ? baseName : 'image';
+  return `${safeBaseName}-decayed-g${generation}.png`;
+};
 
 const createInitialPlaybackState = (
   settings: SessionSettings,
@@ -622,29 +631,36 @@ export const useDecayController = ({
     }
   };
 
+  const pausePlayback = () => {
+    loopTokenRef.current += 1;
+    stopLoop();
+    schedulerRef.current = {
+      ...schedulerRef.current,
+      generationDebt: 0,
+    };
+    setPlayback((prev) => {
+      if (!prev.isPlaying) {
+        return prev;
+      }
+      return {
+        ...prev,
+        isPlaying: false,
+        simulation: {
+          ...prev.simulation,
+          effectiveGenPerSec: 0,
+          generationDebt: 0,
+        },
+      };
+    });
+  };
+
   const handlePlayPause = () => {
     if (!uploadRef.current) {
       return;
     }
 
     if (playbackRef.current.isPlaying) {
-      loopTokenRef.current += 1;
-      stopLoop();
-      schedulerRef.current = {
-        ...schedulerRef.current,
-        generationDebt: 0,
-      };
-      setPlayback((prev) => {
-        return {
-          ...prev,
-          isPlaying: false,
-          simulation: {
-            ...prev.simulation,
-            effectiveGenPerSec: 0,
-            generationDebt: 0,
-          },
-        };
-      });
+      pausePlayback();
       return;
     }
 
@@ -707,6 +723,49 @@ export const useDecayController = ({
     });
   };
 
+  const handleDownload = async (): Promise<void> => {
+    if (playbackRef.current.isPlaying) {
+      pausePlayback();
+    }
+    setShowOriginal(false);
+
+    const canvas = currentCanvasRef.current;
+    const uploadState = uploadRef.current;
+    if (!canvas || !uploadState) {
+      return;
+    }
+
+    try {
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => {
+            if (!result) {
+              reject(new Error('toBlob returned null'));
+              return;
+            }
+            resolve(result);
+          },
+          DOWNLOAD_MIME_TYPE,
+        );
+      });
+
+      const generation = playbackRef.current.simulation.appliedGeneration;
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = createDownloadFileName(uploadState.fileName, generation);
+      anchor.rel = 'noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 0);
+    } catch {
+      setNotice(DOWNLOAD_IMAGE_FAILED_NOTICE);
+    }
+  };
+
   return {
     playback,
     upload,
@@ -724,6 +783,7 @@ export const useDecayController = ({
     handleBackToLanding,
     handleReset: () => resetSession(true),
     handleCompareToggle: () => setShowOriginal((prev) => !prev),
+    handleDownload,
     shiftSpeed,
   };
 };

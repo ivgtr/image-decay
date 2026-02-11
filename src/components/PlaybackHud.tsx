@@ -15,6 +15,7 @@ export function PlaybackHud({
   onReset,
   onSlower,
   onFaster,
+  onDownload,
   onCompareToggle,
   showOriginal,
 }: PlaybackHudProps) {
@@ -25,6 +26,7 @@ export function PlaybackHud({
         fileName={fileName}
         hasEnded={hasEnded}
         onCompareToggle={onCompareToggle}
+        onDownload={onDownload}
         onReset={onReset}
         showOriginal={showOriginal}
         speedLabel={`x${speed}`}
