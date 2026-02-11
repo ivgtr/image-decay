@@ -4,33 +4,29 @@ interface CanvasViewportProps {
   originalCanvas: HTMLCanvasElement | null;
   currentCanvas: HTMLCanvasElement | null;
   frameVersion: number;
+  showOriginal: boolean;
 }
 
 const EmptyState = () => {
   return (
-    <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/60 p-6 text-sm text-slate-300">
-      画像をアップロードすると、ここに比較ビューを表示します。
+    <div className="flex h-full min-h-[360px] items-center justify-center rounded-3xl border border-dashed border-slate-400 bg-slate-100/70 p-6 text-sm text-slate-600">
+      No Image
     </div>
   );
 };
 
-const drawSplitPreview = (
+const drawPreview = (
   canvas: HTMLCanvasElement,
-  original: HTMLCanvasElement,
-  current: HTMLCanvasElement,
-  splitRatio: number,
+  source: HTMLCanvasElement,
   containerWidth: number,
-): void => {
+): { width: number; height: number } => {
   const context = canvas.getContext('2d');
-  if (!context) {
-    return;
+  if (!context || source.width === 0 || source.height === 0) {
+    return { width: 0, height: 0 };
   }
 
-  const sourceWidth = original.width;
-  const sourceHeight = original.height;
-  if (sourceWidth === 0 || sourceHeight === 0) {
-    return;
-  }
+  const sourceWidth = source.width;
+  const sourceHeight = source.height;
 
   const width = Math.max(320, Math.round(containerWidth));
   const height = Math.max(180, Math.round((width * sourceHeight) / sourceWidth));
@@ -39,31 +35,16 @@ const drawSplitPreview = (
   canvas.height = height;
 
   context.clearRect(0, 0, width, height);
-  context.fillStyle = '#0f172a';
+  context.fillStyle = '#f8fafc';
   context.fillRect(0, 0, width, height);
+  context.drawImage(source, 0, 0, width, height);
 
-  context.drawImage(original, 0, 0, width, height);
-
-  const splitX = Math.round(width * splitRatio);
-  context.save();
-  context.beginPath();
-  context.rect(0, 0, splitX, height);
-  context.clip();
-  context.drawImage(current, 0, 0, width, height);
-  context.restore();
-
-  context.strokeStyle = '#38bdf8';
-  context.lineWidth = 2;
-  context.beginPath();
-  context.moveTo(splitX + 0.5, 0);
-  context.lineTo(splitX + 0.5, height);
-  context.stroke();
+  return { width, height };
 };
 
-export function CanvasViewport({ originalCanvas, currentCanvas, frameVersion }: CanvasViewportProps) {
+export function CanvasViewport({ originalCanvas, currentCanvas, frameVersion, showOriginal }: CanvasViewportProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLCanvasElement | null>(null);
-  const [split, setSplit] = useState<number>(0.5);
   const [width, setWidth] = useState<number>(0);
 
   useEffect(() => {
@@ -94,32 +75,24 @@ export function CanvasViewport({ originalCanvas, currentCanvas, frameVersion }: 
       return;
     }
 
-    drawSplitPreview(previewRef.current, originalCanvas, currentCanvas, split, width);
-  }, [currentCanvas, frameVersion, originalCanvas, split, width]);
+    const source = showOriginal ? originalCanvas : currentCanvas;
+    drawPreview(previewRef.current, source, width);
+  }, [currentCanvas, frameVersion, originalCanvas, showOriginal, width]);
 
   if (!originalCanvas || !currentCanvas) {
     return <EmptyState />;
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-slate-700 bg-slate-900 p-3" ref={wrapperRef}>
-      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400">
-        <span>Current</span>
-        <span>Original</span>
+    <section className="panel-surface relative w-full overflow-hidden p-2 md:p-4" ref={wrapperRef}>
+      <div className="relative">
+        <canvas className="w-full rounded-2xl border border-slate-300 bg-slate-50" ref={previewRef} />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-slate-900/5" />
       </div>
-      <canvas className="w-full rounded-lg bg-slate-800" ref={previewRef} />
-      <label className="block text-sm text-slate-300">
-        比較スライダー
-        <input
-          className="mt-2 w-full accent-sky-400"
-          max={100}
-          min={0}
-          onChange={(event) => setSplit(Number(event.target.value) / 100)}
-          step={1}
-          type="range"
-          value={Math.round(split * 100)}
-        />
-      </label>
+
+      <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-slate-400 bg-white/95 px-2 py-2 text-xs font-semibold tracking-[0.08em] text-slate-700">
+        {showOriginal ? 'ORIGINAL' : 'DECAY'}
+      </div>
     </section>
   );
 }
