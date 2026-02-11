@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit By Intent"
+  short_description: "Split git changes into clean semantic commits"
+  default_prompt: "Use $commit-by-intent to split current diffs into meaningful, reviewable commits with Conventional Commit messages."
