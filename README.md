@@ -17,6 +17,16 @@ npm install
 npm run dev
 ```
 
+## 開発コマンド
+
+```bash
+npm run typecheck
+npm run lint
+npm run lint:fix
+npm run format
+npm run format:check
+```
+
 ## 現在の状態
 
 - JPEG再エンコード劣化ループ: 実装済み（`toBlob('image/jpeg', q)` + リトライ）
