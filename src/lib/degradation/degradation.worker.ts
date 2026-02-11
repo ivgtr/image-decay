@@ -168,5 +168,3 @@ self.onmessage = (event: MessageEvent<DegradationWorkerRequest>) => {
       });
     });
 };
-
-export {};

@@ -49,18 +49,19 @@ const qualityModelOptions: SessionSettings['qualityModel'][] = ['fixed', 'linear
 
 interface FieldShellProps {
   label: string;
+  htmlFor: string;
   error?: string;
   className?: string;
   children: ReactNode;
 }
 
-const FieldShell = ({ label, error, className, children }: FieldShellProps) => {
+const FieldShell = ({ label, htmlFor, error, className, children }: FieldShellProps) => {
   return (
-    <label className={className ? `ui-field-label ${className}` : 'ui-field-label'}>
-      {label}
+    <div className={className ? `ui-field-label ${className}` : 'ui-field-label'}>
+      <label htmlFor={htmlFor}>{label}</label>
       {children}
       <ErrorMessage message={error} />
-    </label>
+    </div>
   );
 };
 
@@ -99,9 +100,10 @@ export function ControlPanel({
         </button>
       </div>
 
-      <FieldShell error={errors.speed} label="Speed">
+      <FieldShell error={errors.speed} htmlFor="settings-speed" label="Speed">
         <select
           className={fieldClass(Boolean(errors.speed))}
+          id="settings-speed"
           onChange={(event) => update('speed', Number(event.target.value) as SpeedPreset)}
           value={settings.speed}
         >
@@ -113,9 +115,10 @@ export function ControlPanel({
         </select>
       </FieldShell>
 
-      <FieldShell error={errors.qualityModel} label="Quality Model">
+      <FieldShell error={errors.qualityModel} htmlFor="settings-quality-model" label="Quality Model">
         <select
           className={fieldClass(Boolean(errors.qualityModel))}
+          id="settings-quality-model"
           onChange={(event) => update('qualityModel', event.target.value as SessionSettings['qualityModel'])}
           value={settings.qualityModel}
         >
@@ -130,10 +133,18 @@ export function ControlPanel({
       <div className="grid grid-cols-2 gap-4">
         {numericFieldConfigs.map(({ key, className }) => {
           const limits = SETTINGS_LIMITS[key];
+          const inputId = `settings-${key}`;
           return (
-            <FieldShell className={className} error={errors[key]} key={key} label={limits.label}>
+            <FieldShell
+              className={className}
+              error={errors[key]}
+              htmlFor={inputId}
+              key={key}
+              label={limits.label}
+            >
               <input
                 className={fieldClass(Boolean(errors[key]))}
+                id={inputId}
                 max={limits.max}
                 min={limits.min}
                 onChange={(event) => update(key, event.target.valueAsNumber)}

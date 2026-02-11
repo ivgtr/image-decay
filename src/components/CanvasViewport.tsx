@@ -31,6 +31,7 @@ export function CanvasViewport({ originalCanvas, currentCanvas, frameVersion, sh
 
     const source = showOriginal ? originalCanvas : currentCanvas;
     drawCanvasPreview(previewRef.current, source, width);
+    previewRef.current.dataset.frameVersion = String(frameVersion);
   }, [currentCanvas, frameVersion, originalCanvas, showOriginal, width]);
 
   if (!originalCanvas || !currentCanvas) {

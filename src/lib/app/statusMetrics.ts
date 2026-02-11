@@ -1,4 +1,4 @@
-import { type PlaybackState } from '../../types/domain';
+import type { PlaybackState } from '../../types/domain';
 
 export interface StatusMetricItem {
   id: 'generation' | 'quality' | 'elapsed' | 'fps' | 'psnr' | 'ssim';

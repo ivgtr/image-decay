@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   DEFAULT_NOTICE,
   ENCODE_FAILED_NOTICE,
@@ -156,13 +156,13 @@ export const useDecayController = ({
     };
   };
 
-  const stopLoop = () => {
+  const stopLoop = useCallback(() => {
     if (loopTimerRef.current !== null) {
       window.clearTimeout(loopTimerRef.current);
       loopTimerRef.current = null;
     }
     playbackClockRef.current = null;
-  };
+  }, []);
 
   const measureQualityMetrics = (): { psnr: number | null; ssim: number | null } => {
     const original = originalCanvasRef.current;
@@ -416,7 +416,7 @@ export const useDecayController = ({
 
     playbackClockRef.current = performance.now();
     void runTickRef.current();
-  }, [playback.isPlaying, settings.batch, settings.speed, settings.tickMs, upload]);
+  }, [playback.isPlaying, stopLoop, upload]);
 
   const handleUpload = async (file: File | null): Promise<void> => {
     if (!file) {
