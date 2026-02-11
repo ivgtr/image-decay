@@ -43,8 +43,10 @@ Run `npm run typecheck && npm run build` before opening a PR.
   - Metrics display: generation / quality / elapsed / FPS / PSNR / SSIM
   - Settings validation and localStorage schema sanitization
   - Automatic downscale for large images and Blob URL cleanup
+  - Worker + OffscreenCanvas PoC (auto fallback to main thread on unsupported/error)
+  - Worker frame transfer black-screen issue fix (`transferToImageBitmap` after restore draw)
+  - Worker message serialization to avoid `process/init` race
 - Not implemented yet:
-  - Worker + OffscreenCanvas path
   - Full cross-browser verification and long-run endurance report
 
 ## Commit & Pull Request Guidelines

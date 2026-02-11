@@ -24,4 +24,7 @@ npm run dev
 - メトリクス: generation / quality / elapsed / FPS / PSNR / SSIMを更新
 - 設定: UI入力バリデーション + localStorage復元時のスキーマ検証を実装
 - パフォーマンス: Blob URL解放・高解像度自動縮小（長辺4096）を実装
-- 未対応: Worker + OffscreenCanvas、クロスブラウザ実機検証、長時間耐久の体系テスト、最小自動テスト導入
+- Worker + OffscreenCanvas: PoC実装済み（対応環境ではWorker処理、失敗時はメインスレッドへ自動フォールバック）
+  - Workerメッセージは直列化し、`process` と `init` の競合を防止
+  - `transferToImageBitmap` 後のフレーム復元で黒画面化を回避
+- 未対応: クロスブラウザ実機検証、長時間耐久の体系テスト、最小自動テスト導入
