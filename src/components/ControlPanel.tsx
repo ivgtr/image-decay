@@ -13,17 +13,17 @@ interface ControlPanelProps {
 }
 
 const baseInputClass =
-  'mt-1 w-full rounded-md border bg-slate-800 px-2 py-2 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500';
+  'ui-field';
 
 const fieldClass = (hasError: boolean): string => {
-  return `${baseInputClass} ${hasError ? 'border-rose-500' : 'border-slate-600'}`;
+  return `${baseInputClass} ${hasError ? 'ui-field-error' : ''}`.trim();
 };
 
 const ErrorMessage = ({ message }: { message?: string }) => {
   if (!message) {
     return null;
   }
-  return <p className="mt-1 text-xs text-rose-300">{message}</p>;
+  return <p className="ui-error-text">{message}</p>;
 };
 
 export function ControlPanel({
@@ -40,10 +40,10 @@ export function ControlPanel({
   };
 
   return (
-    <section className="space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-4">
+    <section className="panel-surface space-y-4 rounded-2xl p-4">
       <div className="flex items-center gap-2">
         <button
-          className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="ui-btn ui-btn-primary ui-btn-caps"
           disabled={disablePlay}
           onClick={onPlayPause}
           type="button"
@@ -51,7 +51,7 @@ export function ControlPanel({
           {isPlaying ? 'Pause' : 'Play'}
         </button>
         <button
-          className="rounded-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-600"
+          className="ui-btn ui-btn-secondary ui-btn-caps"
           onClick={onReset}
           type="button"
         >
@@ -59,7 +59,7 @@ export function ControlPanel({
         </button>
       </div>
 
-      <label className="block text-sm text-slate-300">
+      <label className="ui-field-label">
         Speed
         <select
           className={fieldClass(Boolean(errors.speed))}
@@ -75,7 +75,7 @@ export function ControlPanel({
         <ErrorMessage message={errors.speed} />
       </label>
 
-      <label className="block text-sm text-slate-300">
+      <label className="ui-field-label">
         Quality Model
         <select
           className={fieldClass(Boolean(errors.qualityModel))}
@@ -89,8 +89,8 @@ export function ControlPanel({
         <ErrorMessage message={errors.qualityModel} />
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="text-sm text-slate-300">
+      <div className="grid grid-cols-2 gap-4">
+        <label className="ui-field-label">
           Initial Q
           <input
             className={fieldClass(Boolean(errors.initialQuality))}
@@ -104,7 +104,7 @@ export function ControlPanel({
           <ErrorMessage message={errors.initialQuality} />
         </label>
 
-        <label className="text-sm text-slate-300">
+        <label className="ui-field-label">
           Min Q
           <input
             className={fieldClass(Boolean(errors.minQuality))}
@@ -118,7 +118,7 @@ export function ControlPanel({
           <ErrorMessage message={errors.minQuality} />
         </label>
 
-        <label className="text-sm text-slate-300">
+        <label className="ui-field-label">
           Linear Decay
           <input
             className={fieldClass(Boolean(errors.linearDecay))}
@@ -132,7 +132,7 @@ export function ControlPanel({
           <ErrorMessage message={errors.linearDecay} />
         </label>
 
-        <label className="text-sm text-slate-300">
+        <label className="ui-field-label">
           Exponential Decay
           <input
             className={fieldClass(Boolean(errors.exponentialDecay))}
@@ -146,7 +146,7 @@ export function ControlPanel({
           <ErrorMessage message={errors.exponentialDecay} />
         </label>
 
-        <label className="text-sm text-slate-300">
+        <label className="ui-field-label">
           Tick (ms)
           <input
             className={fieldClass(Boolean(errors.tickMs))}
@@ -160,7 +160,7 @@ export function ControlPanel({
           <ErrorMessage message={errors.tickMs} />
         </label>
 
-        <label className="text-sm text-slate-300">
+        <label className="ui-field-label">
           Batch
           <input
             className={fieldClass(Boolean(errors.batch))}
@@ -174,7 +174,7 @@ export function ControlPanel({
           <ErrorMessage message={errors.batch} />
         </label>
 
-        <label className="col-span-2 text-sm text-slate-300">
+        <label className="ui-field-label col-span-2">
           Max Generations
           <input
             className={fieldClass(Boolean(errors.maxGenerations))}

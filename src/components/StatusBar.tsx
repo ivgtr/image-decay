@@ -26,14 +26,23 @@ const formatSsim = (value: number | null): string => {
 };
 
 export function StatusBar({ playback }: StatusBarProps) {
+  const stats = [
+    { label: 'Generation', value: `${playback.generation}` },
+    { label: 'Quality', value: playback.currentQuality.toFixed(3) },
+    { label: 'Elapsed', value: `${toSeconds(playback.elapsedMs)}s` },
+    { label: 'FPS', value: playback.fps.toFixed(1) },
+    { label: 'PSNR', value: formatPsnr(playback.psnr) },
+    { label: 'SSIM', value: formatSsim(playback.ssim) },
+  ];
+
   return (
-    <section className="grid gap-3 rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm text-slate-200 md:grid-cols-6">
-      <p>Generation: {playback.generation}</p>
-      <p>Quality: {playback.currentQuality.toFixed(3)}</p>
-      <p>Elapsed: {toSeconds(playback.elapsedMs)}s</p>
-      <p>FPS: {playback.fps.toFixed(1)}</p>
-      <p>PSNR: {formatPsnr(playback.psnr)}</p>
-      <p>SSIM: {formatSsim(playback.ssim)}</p>
+    <section className="panel-surface grid gap-3 rounded-2xl p-4 md:grid-cols-3 xl:grid-cols-6">
+      {stats.map((stat) => (
+        <article className="ui-stat-card" key={stat.label}>
+          <p className="micro-label">{stat.label}</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{stat.value}</p>
+        </article>
+      ))}
     </section>
   );
 }
