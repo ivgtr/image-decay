@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { SETTINGS_LIMITS } from '../lib/degradation/model';
 import type { SessionSettings, SessionSettingsErrorMap, SpeedPreset } from '../types/domain';
 import { SPEED_PRESETS } from '../types/domain';
+import { PauseIcon, PlayIcon, ResetIcon } from './icons/AppIcons';
 
 interface ControlPanelProps {
   settings: SessionSettings;
@@ -26,6 +28,42 @@ const ErrorMessage = ({ message }: { message?: string }) => {
   return <p className="ui-error-text">{message}</p>;
 };
 
+type NumericSettingKey = keyof typeof SETTINGS_LIMITS;
+
+interface NumericFieldConfig {
+  key: NumericSettingKey;
+  className?: string;
+}
+
+const numericFieldConfigs: NumericFieldConfig[] = [
+  { key: 'initialQuality' },
+  { key: 'minQuality' },
+  { key: 'linearDecay' },
+  { key: 'exponentialDecay' },
+  { key: 'tickMs' },
+  { key: 'batch' },
+  { key: 'maxGenerations', className: 'col-span-2' },
+];
+
+const qualityModelOptions: SessionSettings['qualityModel'][] = ['fixed', 'linear', 'exponential'];
+
+interface FieldShellProps {
+  label: string;
+  error?: string;
+  className?: string;
+  children: ReactNode;
+}
+
+const FieldShell = ({ label, error, className, children }: FieldShellProps) => {
+  return (
+    <label className={className ? `ui-field-label ${className}` : 'ui-field-label'}>
+      {label}
+      {children}
+      <ErrorMessage message={error} />
+    </label>
+  );
+};
+
 export function ControlPanel({
   settings,
   errors,
@@ -43,24 +81,25 @@ export function ControlPanel({
     <section className="panel-surface space-y-4 rounded-2xl p-4">
       <div className="flex items-center gap-2">
         <button
-          className="ui-btn ui-btn-primary ui-btn-caps"
+          className="ui-btn ui-btn-primary ui-btn-caps gap-2"
           disabled={disablePlay}
           onClick={onPlayPause}
           type="button"
         >
+          {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
           {isPlaying ? 'Pause' : 'Play'}
         </button>
         <button
-          className="ui-btn ui-btn-secondary ui-btn-caps"
+          className="ui-btn ui-btn-secondary ui-btn-caps gap-2"
           onClick={onReset}
           type="button"
         >
+          <ResetIcon className="h-4 w-4" />
           Reset
         </button>
       </div>
 
-      <label className="ui-field-label">
-        Speed
+      <FieldShell error={errors.speed} label="Speed">
         <select
           className={fieldClass(Boolean(errors.speed))}
           onChange={(event) => update('speed', Number(event.target.value) as SpeedPreset)}
@@ -72,121 +111,39 @@ export function ControlPanel({
             </option>
           ))}
         </select>
-        <ErrorMessage message={errors.speed} />
-      </label>
+      </FieldShell>
 
-      <label className="ui-field-label">
-        Quality Model
+      <FieldShell error={errors.qualityModel} label="Quality Model">
         <select
           className={fieldClass(Boolean(errors.qualityModel))}
           onChange={(event) => update('qualityModel', event.target.value as SessionSettings['qualityModel'])}
           value={settings.qualityModel}
         >
-          <option value="fixed">fixed</option>
-          <option value="linear">linear</option>
-          <option value="exponential">exponential</option>
+          {qualityModelOptions.map((model) => (
+            <option key={model} value={model}>
+              {model}
+            </option>
+          ))}
         </select>
-        <ErrorMessage message={errors.qualityModel} />
-      </label>
+      </FieldShell>
 
       <div className="grid grid-cols-2 gap-4">
-        <label className="ui-field-label">
-          Initial Q
-          <input
-            className={fieldClass(Boolean(errors.initialQuality))}
-            max={SETTINGS_LIMITS.initialQuality.max}
-            min={SETTINGS_LIMITS.initialQuality.min}
-            onChange={(event) => update('initialQuality', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.initialQuality.step}
-            type="number"
-            value={settings.initialQuality}
-          />
-          <ErrorMessage message={errors.initialQuality} />
-        </label>
-
-        <label className="ui-field-label">
-          Min Q
-          <input
-            className={fieldClass(Boolean(errors.minQuality))}
-            max={SETTINGS_LIMITS.minQuality.max}
-            min={SETTINGS_LIMITS.minQuality.min}
-            onChange={(event) => update('minQuality', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.minQuality.step}
-            type="number"
-            value={settings.minQuality}
-          />
-          <ErrorMessage message={errors.minQuality} />
-        </label>
-
-        <label className="ui-field-label">
-          Linear Decay
-          <input
-            className={fieldClass(Boolean(errors.linearDecay))}
-            max={SETTINGS_LIMITS.linearDecay.max}
-            min={SETTINGS_LIMITS.linearDecay.min}
-            onChange={(event) => update('linearDecay', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.linearDecay.step}
-            type="number"
-            value={settings.linearDecay}
-          />
-          <ErrorMessage message={errors.linearDecay} />
-        </label>
-
-        <label className="ui-field-label">
-          Exponential Decay
-          <input
-            className={fieldClass(Boolean(errors.exponentialDecay))}
-            max={SETTINGS_LIMITS.exponentialDecay.max}
-            min={SETTINGS_LIMITS.exponentialDecay.min}
-            onChange={(event) => update('exponentialDecay', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.exponentialDecay.step}
-            type="number"
-            value={settings.exponentialDecay}
-          />
-          <ErrorMessage message={errors.exponentialDecay} />
-        </label>
-
-        <label className="ui-field-label">
-          Tick (ms)
-          <input
-            className={fieldClass(Boolean(errors.tickMs))}
-            max={SETTINGS_LIMITS.tickMs.max}
-            min={SETTINGS_LIMITS.tickMs.min}
-            onChange={(event) => update('tickMs', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.tickMs.step}
-            type="number"
-            value={settings.tickMs}
-          />
-          <ErrorMessage message={errors.tickMs} />
-        </label>
-
-        <label className="ui-field-label">
-          Batch
-          <input
-            className={fieldClass(Boolean(errors.batch))}
-            max={SETTINGS_LIMITS.batch.max}
-            min={SETTINGS_LIMITS.batch.min}
-            onChange={(event) => update('batch', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.batch.step}
-            type="number"
-            value={settings.batch}
-          />
-          <ErrorMessage message={errors.batch} />
-        </label>
-
-        <label className="ui-field-label col-span-2">
-          Max Generations
-          <input
-            className={fieldClass(Boolean(errors.maxGenerations))}
-            max={SETTINGS_LIMITS.maxGenerations.max}
-            min={SETTINGS_LIMITS.maxGenerations.min}
-            onChange={(event) => update('maxGenerations', event.target.valueAsNumber)}
-            step={SETTINGS_LIMITS.maxGenerations.step}
-            type="number"
-            value={settings.maxGenerations}
-          />
-          <ErrorMessage message={errors.maxGenerations} />
-        </label>
+        {numericFieldConfigs.map(({ key, className }) => {
+          const limits = SETTINGS_LIMITS[key];
+          return (
+            <FieldShell className={className} error={errors[key]} key={key} label={limits.label}>
+              <input
+                className={fieldClass(Boolean(errors[key]))}
+                max={limits.max}
+                min={limits.min}
+                onChange={(event) => update(key, event.target.valueAsNumber)}
+                step={limits.step}
+                type="number"
+                value={settings[key]}
+              />
+            </FieldShell>
+          );
+        })}
       </div>
     </section>
   );

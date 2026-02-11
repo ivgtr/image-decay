@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useElementWidth } from '../hooks/useElementWidth';
+import { drawCanvasPreview } from '../lib/app/canvasPreview';
+import { UploadIcon } from './icons/AppIcons';
 
 interface CanvasViewportProps {
   originalCanvas: HTMLCanvasElement | null;
@@ -9,66 +12,17 @@ interface CanvasViewportProps {
 
 const EmptyState = () => {
   return (
-    <div className="flex h-full min-h-[360px] items-center justify-center rounded-3xl border border-dashed border-slate-400 bg-slate-100/70 p-6 text-sm text-slate-600">
+    <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-slate-400 bg-slate-100/70 p-6 text-sm text-slate-600">
+      <UploadIcon className="h-6 w-6" />
       No Image
     </div>
   );
 };
 
-const drawPreview = (
-  canvas: HTMLCanvasElement,
-  source: HTMLCanvasElement,
-  containerWidth: number,
-): { width: number; height: number } => {
-  const context = canvas.getContext('2d');
-  if (!context || source.width === 0 || source.height === 0) {
-    return { width: 0, height: 0 };
-  }
-
-  const sourceWidth = source.width;
-  const sourceHeight = source.height;
-
-  const width = Math.max(320, Math.round(containerWidth));
-  const height = Math.max(180, Math.round((width * sourceHeight) / sourceWidth));
-
-  canvas.width = width;
-  canvas.height = height;
-
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = '#f8fafc';
-  context.fillRect(0, 0, width, height);
-  context.drawImage(source, 0, 0, width, height);
-
-  return { width, height };
-};
-
 export function CanvasViewport({ originalCanvas, currentCanvas, frameVersion, showOriginal }: CanvasViewportProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLCanvasElement | null>(null);
-  const [width, setWidth] = useState<number>(0);
-
-  useEffect(() => {
-    if (!wrapperRef.current || !originalCanvas || !currentCanvas) {
-      setWidth(0);
-      return;
-    }
-
-    const element = wrapperRef.current;
-    const updateWidth = () => {
-      setWidth(element.clientWidth);
-    };
-
-    const observer = new ResizeObserver(() => {
-      updateWidth();
-    });
-
-    observer.observe(element);
-    updateWidth();
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [currentCanvas, originalCanvas]);
+  const width = useElementWidth(wrapperRef, Boolean(originalCanvas && currentCanvas));
 
   useEffect(() => {
     if (!previewRef.current || !originalCanvas || !currentCanvas || width <= 0) {
@@ -76,7 +30,7 @@ export function CanvasViewport({ originalCanvas, currentCanvas, frameVersion, sh
     }
 
     const source = showOriginal ? originalCanvas : currentCanvas;
-    drawPreview(previewRef.current, source, width);
+    drawCanvasPreview(previewRef.current, source, width);
   }, [currentCanvas, frameVersion, originalCanvas, showOriginal, width]);
 
   if (!originalCanvas || !currentCanvas) {
