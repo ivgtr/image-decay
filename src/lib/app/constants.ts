@@ -19,7 +19,7 @@ export const VIEWER_SPEED_PRESETS: SpeedPreset[] = [0.5, 1, 2, 4, 8, 16];
 export const SAMPLE_OPTIONS = [
   { id: 'neon-city', title: 'Neon City' },
   { id: 'portrait-light', title: 'Portrait Light' },
-  { id: 'paper-texture', title: 'Paper Texture' },
+  { id: 'detail-lab', title: 'Detail Lab' },
 ] as const;
 
 export type SampleId = (typeof SAMPLE_OPTIONS)[number]['id'];

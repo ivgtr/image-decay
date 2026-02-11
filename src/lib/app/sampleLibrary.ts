@@ -96,54 +96,88 @@ const drawPortraitLight = (ctx: CanvasRenderingContext2D, width: number, height:
   ctx.stroke();
 };
 
-const drawPaperTexture = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-  const base = ctx.createLinearGradient(0, 0, width, height);
-  base.addColorStop(0, '#f8fafc');
-  base.addColorStop(0.5, '#e2e8f0');
-  base.addColorStop(1, '#cbd5e1');
-  ctx.fillStyle = base;
+const drawDetailLab = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, '#111827');
+  bg.addColorStop(1, '#020617');
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.globalAlpha = 0.25;
-  for (let y = 0; y < height; y += 8) {
-    for (let x = 0; x < width; x += 8) {
-      const tone = 190 + ((x * 13 + y * 17) % 45);
-      ctx.fillStyle = `rgb(${tone},${tone},${tone})`;
-      ctx.fillRect(x, y, 4, 4);
+  // JPEG劣化で差が出やすい高周波パターンを重ねる。
+  ctx.globalAlpha = 0.95;
+  for (let y = 0; y < height; y += 16) {
+    for (let x = 0; x < width; x += 16) {
+      const even = ((x + y) / 16) % 2 === 0;
+      ctx.fillStyle = even ? '#e2e8f0' : '#0ea5e9';
+      ctx.fillRect(x, y, 8, 8);
     }
   }
 
-  ctx.globalAlpha = 0.7;
-  ctx.strokeStyle = '#64748b';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 18; i += 1) {
-    const y = height * (0.08 + i * 0.05);
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = '#f8fafc';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 120; i += 1) {
+    const y = (i * height) / 120;
     ctx.beginPath();
-    ctx.moveTo(width * 0.06, y);
-    ctx.bezierCurveTo(width * 0.2, y - 8, width * 0.8, y + 8, width * 0.94, y);
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y + ((i % 3) - 1) * 6);
     ctx.stroke();
   }
+
   ctx.globalAlpha = 1;
+  ctx.font = '700 120px "Arial Black", sans-serif';
+  ctx.fillStyle = '#f97316';
+  ctx.fillText('DETAIL', width * 0.08, height * 0.35);
+  ctx.fillStyle = '#22d3ee';
+  ctx.fillText('LAB', width * 0.08, height * 0.5);
+
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 5;
+  for (let x = width * 0.07; x < width * 0.93; x += width * 0.12) {
+    ctx.beginPath();
+    ctx.moveTo(x, height * 0.62);
+    ctx.lineTo(x + 22, height * 0.9);
+    ctx.stroke();
+  }
 };
 
 type SampleDrawer = (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
 
-const sampleDrawers: Record<SampleId, SampleDrawer> = {
-  'neon-city': drawNeonCity,
-  'portrait-light': drawPortraitLight,
-  'paper-texture': drawPaperTexture,
+interface SampleSpec {
+  drawer: SampleDrawer;
+  width: number;
+  height: number;
+}
+
+const sampleSpecs: Record<SampleId, SampleSpec> = {
+  'neon-city': {
+    drawer: drawNeonCity,
+    width: SAMPLE_WIDTH,
+    height: SAMPLE_HEIGHT,
+  },
+  'portrait-light': {
+    drawer: drawPortraitLight,
+    width: SAMPLE_WIDTH,
+    height: SAMPLE_HEIGHT,
+  },
+  'detail-lab': {
+    drawer: drawDetailLab,
+    width: SAMPLE_WIDTH,
+    height: SAMPLE_HEIGHT,
+  },
 };
 
 export const createSampleImageFile = async (sampleId: SampleId): Promise<File> => {
+  const sampleSpec = sampleSpecs[sampleId];
   const canvas = document.createElement('canvas');
-  canvas.width = SAMPLE_WIDTH;
-  canvas.height = SAMPLE_HEIGHT;
+  canvas.width = sampleSpec.width;
+  canvas.height = sampleSpec.height;
   const ctx = canvas.getContext('2d');
 
   if (!ctx) {
     throw new Error('サンプル画像の生成に失敗しました。');
   }
 
-  sampleDrawers[sampleId](ctx, canvas.width, canvas.height);
+  sampleSpec.drawer(ctx, canvas.width, canvas.height);
   return toSampleFile(canvas, sampleId);
 };
